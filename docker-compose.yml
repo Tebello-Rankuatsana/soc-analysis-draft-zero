@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  soc-analysis:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./tools:/app/tools
+      - ./uploads:/app/uploads
+      - /usr/share/wordlists:/usr/share/wordlists:ro
+    environment:
+      - FLASK_ENV=development
+      - FLASK_APP=app.py
+    privileged: true
+    networks:
+      - soc-network
+
+networks:
+  soc-network:
+    driver: bridge
