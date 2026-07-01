@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOC Analysis Platform</title>
+    <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-shield-alt"></i>
+                <h1>SOC Analysis Platform</h1>
+            </div>
+            <div class="status">
+                <span class="status-dot" id="statusDot"></span>
+                <span id="statusText">Disconnected</span>
+            </div>
+        </header>
+
+        <nav class="sidebar">
+            <ul>
+                <li class="active" data-tab="dashboard">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </li>
+                <li data-tab="scan">
+                    <i class="fas fa-network-wired"></i>
+                    <span>Network Scan</span>
+                </li>
+                <li data-tab="packet">
+                    <i class="fas fa-wifi"></i>
+                    <span>Packet Analysis</span>
+                </li>
+                <li data-tab="exploit">
+                    <i class="fas fa-bug"></i>
+                    <span>Exploit</span>
+                </li>
+                <li data-tab="bruteforce">
+                    <i class="fas fa-key"></i>
+                    <span>Brute Force</span>
+                </li>
+                <li data-tab="crack">
+                    <i class="fas fa-lock"></i>
+                    <span>Hash Cracking</span>
+                </li>
+                <li data-tab="reports">
+                    <i class="fas fa-file-alt"></i>
+                    <span>Reports</span>
+                </li>
+            </ul>
+        </nav>
+
+        <main>
+            <div id="dashboard" class="tab-content active">
+                <h2>Security Operations Center</h2>
+                <div class="dashboard-cards">
+                    <div class="card">
+                        <i class="fas fa-globe"></i>
+                        <h3>Active Scans</h3>
+                        <span class="number" id="activeScans">0</span>
+                    </div>
+                    <div class="card">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>Alerts</h3>
+                        <span class="number" id="alerts">0</span>
+                    </div>
+                    <div class="card">
+                        <i class="fas fa-clock"></i>
+                        <h3>Response Time</h3>
+                        <span class="number">2.3s</span>
+                    </div>
+                    <div class="card">
+                        <i class="fas fa-check-circle"></i>
+                        <h3>Tools Ready</h3>
+                        <span class="number" id="toolsReady">0</span>
+                    </div>
+                </div>
+
+                <div class="tool-grid">
+                    <h3>Available Tools</h3>
+                    <div id="toolsList"></div>
+                </div>
+            </div>
+
+            <div id="scan" class="tab-content">
+                <h2>Network Scanner</h2>
+                <div class="tool-container">
+                    <div class="input-group">
+                        <label for="scanTarget">Target IP/Hostname</label>
+                        <input type="text" id="scanTarget" placeholder="192.168.1.1">
+                    </div>
+                    <div class="input-group">
+                        <label for="scanType">Scan Type</label>
+                        <select id="scanType">
+                            <option value="quick">Quick Scan</option>
+                            <option value="comprehensive">Comprehensive</option>
+                            <option value="udp">UDP Scan</option>
+                            <option value="vulnerability">Vulnerability Scan</option>
+                            <option value="stealth">Stealth Scan</option>
+                        </select>
+                    </div>
+                    <button onclick="runScan()" class="btn-primary">
+                        <i class="fas fa-play"></i> Start Scan
+                    </button>
+                    <div id="scanResults"></div>
+                </div>
+            </div>
+
+            <div id="packet" class="tab-content">
+                <h2>Packet Analysis</h2>
+                <div class="tool-container">
+                    <div class="input-group">
+                        <label for="pcapFile">PCAP File</label>
+                        <input type="file" id="pcapFile" accept=".pcap,.pcapng">
+                    </div>
+                    <div class="input-group">
+                        <label for="packetFilters">Filters</label>
+                        <select id="packetFilters" multiple>
+                            <option value="http">HTTP</option>
+                            <option value="dns">DNS</option>
+                            <option value="tcp">TCP</option>
+                            <option value="udp">UDP</option>
+                            <option value="icmp">ICMP</option>
+                            <option value="malicious">Malicious Patterns</option>
+                        </select>
+                    </div>
+                    <button onclick="analyzePackets()" class="btn-primary">
+                        <i class="fas fa-play"></i> Analyze
+                    </button>
+                    <div id="packetResults"></div>
+                </div>
+            </div>
+
+            <div id="exploit" class="tab-content">
+                <h2>Metasploit Exploit</h2>
+                <div class="tool-container">
+                    <div class="input-group">
+                        <label for="exploitSelect">Select Exploit</label>
+                        <select id="exploitSelect">
+                            <option value="eternalblue">EternalBlue (MS17-010)</option>
+                            <option value="drupalgeddon2">Drupalgeddon2</option>
+                            <option value="shellshock">Shellshock</option>
+                            <option value="heartbleed">Heartbleed</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="exploitOptions">Options (JSON)</label>
+                        <textarea id="exploitOptions" rows="4">{"RHOSTS": "127.0.0.1", "PAYLOAD": "linux/x64/meterpreter/reverse_tcp"}</textarea>
+                    </div>
+                    <button onclick="runExploit()" class="btn-primary">
+                        <i class="fas fa-play"></i> Execute Exploit
+                    </button>
+                    <div id="exploitResults"></div>
+                </div>
+            </div>
+
+            <div id="bruteforce" class="tab-content">
+                <h2>Brute Force Attack</h2>
+                <div class="tool-container">
+                    <div class="input-group">
+                        <label for="bfService">Service</label>
+                        <select id="bfService">
+                            <option value="ssh">SSH</option>
+                            <option value="ftp">FTP</option>
+                            <option value="http-post-form">HTTP POST</option>
+                            <option value="mysql">MySQL</option>
+                            <option value="rdp">RDP</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="bfTarget">Target</label>
+                        <input type="text" id="bfTarget" placeholder="192.168.1.1:22">
+                    </div>
+                    <div class="input-group">
+                        <label for="bfWordlist">Wordlist</label>
+                        <input type="text" id="bfWordlist" value="/usr/share/wordlists/rockyou.txt">
+                    </div>
+                    <button onclick="runBruteforce()" class="btn-primary">
+                        <i class="fas fa-play"></i> Start Attack
+                    </button>
+                    <div id="bruteforceResults"></div>
+                </div>
+            </div>
+
+            <div id="crack" class="tab-content">
+                <h2>Hash Cracking</h2>
+                <div class="tool-container">
+                    <div class="input-group">
+                        <label for="hashInput">Hash Value</label>
+                        <input type="text" id="hashInput" placeholder="5f4dcc3b5aa765d61d8327deb882cf99">
+                    </div>
+                    <div class="input-group">
+                        <label for="hashType">Hash Type</label>
+                        <select id="hashType">
+                            <option value="md5">MD5</option>
+                            <option value="sha1">SHA1</option>
+                            <option value="sha256">SHA256</option>
+                            <option value="nt">NT</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="crackWordlist">Wordlist</label>
+                        <input type="text" id="crackWordlist" value="/usr/share/wordlists/rockyou.txt">
+                    </div>
+                    <button onclick="crackHash()" class="btn-primary">
+                        <i class="fas fa-play"></i> Crack Hash
+                    </button>
+                    <div id="crackResults"></div>
+                </div>
+            </div>
+
+            <div id="reports" class="tab-content">
+                <h2>Reports</h2>
+                <div class="tool-container">
+                    <button onclick="generateReport()" class="btn-primary">
+                        <i class="fas fa-file-pdf"></i> Generate Report
+                    </button>
+                    <div id="reportResults"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
