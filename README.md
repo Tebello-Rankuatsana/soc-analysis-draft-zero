@@ -1,4 +1,4 @@
-##### SOC-ANALYSIS
+### SOC-ANALYSIS
 
 
 ```
@@ -35,3 +35,7 @@
               ⠀⠀⠀⠀⠈⠛⠿⠿⠿⠛⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⠻⠿⠿⠟⠋⠀⠀⠀⠀
 
 ```
+
+
+### DISCLAIMER: I AM NOT RESPONSIBLE FOR ANY UNAUTHORISED USAGE OF THIS TOOL
+#### DISCLAIMER: ONLY TEST ON YOUR LOCALHOST UNLESS YOU HAVE PERMISSION TO USE IT ON OTHER IP ADDRESS
