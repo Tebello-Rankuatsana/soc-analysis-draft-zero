@@ -6,9 +6,7 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - ./tools:/app/tools
-      - ./uploads:/app/uploads
-      - /usr/share/wordlists:/usr/share/wordlists:ro
+      - ./uploads:/app/uploads 
     environment:
       - FLASK_ENV=development
       - FLASK_APP=app.py
