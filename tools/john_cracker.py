@@ -6,10 +6,8 @@ import re
 class JohnCracker:
     def crack(self, hash_value, hash_type, wordlist):
         """Crack password hash using John the Ripper"""
-        # Check if wordlist exists
-        check_cmd = f"test -f {wordlist}"
-        check = subprocess.run(check_cmd, shell=True, capture_output=True)
-        if check.returncode != 0:
+        # Check if wordlist exists using Python's os.path
+        if not os.path.exists(wordlist):
             return {'error': f'Wordlist not found: {wordlist}'}
 
         # Map common hash types to John's format
@@ -33,37 +31,68 @@ class JohnCracker:
             with open(hash_file, 'w') as f:
                 f.write(hash_value + '\n')
 
-            # Run John to crack (using run() which supports timeout)
+            # Build the command as a list (prevents path issues)
+            cmd = [
+                'john',
+                f'--format={john_format}',
+                f'--wordlist={wordlist}',
+                hash_file
+            ]
+            
+            # Run John with timeout using Popen (for Python 3.6 compatibility)
             try:
-                process = subprocess.run(
-                    ['john', f'--format={john_format}', f'--wordlist={wordlist}', hash_file],
-                    capture_output=True,
-                    text=True,
-                    timeout=60  # 60 second timeout
+                process = subprocess.Popen(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True
                 )
-                stdout = process.stdout
-                stderr = process.stderr
-            except subprocess.TimeoutExpired:
-                return {'error': 'Cracking timeout exceeded (60 seconds)'}
+                
+                # Manual timeout (compatible with older Python)
+                import time
+                start_time = time.time()
+                timeout = 60
+                
+                while process.poll() is None:
+                    if time.time() - start_time > timeout:
+                        process.kill()
+                        return {'error': f'Cracking timeout exceeded ({timeout} seconds)'}
+                    time.sleep(0.1)
+                
+                stdout, stderr = process.communicate()
+                
+            except Exception as e:
+                return {'error': f'Process error: {str(e)}'}
 
             if process.returncode != 0 and 'No password hashes loaded' in stderr:
                 return {'error': 'Invalid hash format or unsupported type'}
 
-            # Now get the cracked password
+            # Get the cracked password
             try:
-                show_process = subprocess.run(
+                show_process = subprocess.Popen(
                     ['john', '--show', hash_file],
-                    capture_output=True,
-                    text=True,
-                    timeout=10
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True
                 )
-            except subprocess.TimeoutExpired:
-                return {'error': 'Timeout reading results'}
+                
+                # Manual timeout for show command
+                start_time = time.time()
+                while show_process.poll() is None:
+                    if time.time() - start_time > 10:
+                        show_process.kill()
+                        return {'error': 'Timeout reading results'}
+                    time.sleep(0.1)
+                
+                show_stdout, show_stderr = show_process.communicate()
+                
+            except Exception as e:
+                return {'error': f'Error reading results: {str(e)}'}
 
             cracked_password = None
             if show_process.returncode == 0:
                 # Parse output like "hash:password"
-                match = re.search(r':([^\n]+)', show_process.stdout)
+                match = re.search(r':([^\n]+)', show_stdout)
                 if match:
                     cracked_password = match.group(1).strip()
 
