@@ -6,7 +6,10 @@ import re
 class JohnCracker:
     def crack(self, hash_value, hash_type, wordlist):
         """Crack password hash using John the Ripper"""
-        if not os.path.exists(wordlist):
+        # Check if wordlist exists
+        check_cmd = f"test -f {wordlist}"
+        check = subprocess.run(check_cmd, shell=True, capture_output=True)
+        if check.returncode != 0:
             return {'error': f'Wordlist not found: {wordlist}'}
 
         # Map common hash types to John's format
@@ -30,35 +33,32 @@ class JohnCracker:
             with open(hash_file, 'w') as f:
                 f.write(hash_value + '\n')
 
-            # Build John command
-            cmd = [
-                'john',
-                f'--format={john_format}',
-                f'--wordlist={wordlist}',
-                '--pot=john.pot',
-                '--stdout'
-            ]
-
-            # First, run John to crack
-            process = subprocess.Popen(
-                ['john', f'--format={john_format}', f'--wordlist={wordlist}', hash_file],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                timeout=300
-            )
-            stdout, stderr = process.communicate()
+            # Run John to crack (using run() which supports timeout)
+            try:
+                process = subprocess.run(
+                    ['john', f'--format={john_format}', f'--wordlist={wordlist}', hash_file],
+                    capture_output=True,
+                    text=True,
+                    timeout=60  # 60 second timeout
+                )
+                stdout = process.stdout
+                stderr = process.stderr
+            except subprocess.TimeoutExpired:
+                return {'error': 'Cracking timeout exceeded (60 seconds)'}
 
             if process.returncode != 0 and 'No password hashes loaded' in stderr:
                 return {'error': 'Invalid hash format or unsupported type'}
 
             # Now get the cracked password
-            show_process = subprocess.run(
-                ['john', '--show', hash_file],
-                capture_output=True,
-                text=True,
-                timeout=30
-            )
+            try:
+                show_process = subprocess.run(
+                    ['john', '--show', hash_file],
+                    capture_output=True,
+                    text=True,
+                    timeout=10
+                )
+            except subprocess.TimeoutExpired:
+                return {'error': 'Timeout reading results'}
 
             cracked_password = None
             if show_process.returncode == 0:
@@ -77,9 +77,6 @@ class JohnCracker:
                 'john_error': stderr if stderr else None
             }
 
-        except subprocess.TimeoutExpired:
-            process.kill()
-            return {'error': 'Cracking timeout exceeded (5 minutes)'}
         except Exception as e:
             return {'error': str(e)}
         finally:
